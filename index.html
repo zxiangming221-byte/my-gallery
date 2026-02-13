@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'Atelier Photo - 个人摄影空间</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+        
+        :root {
+            --primary-purple: #a855f7;
+            --light-purple: #f3e8ff;
+            --bg-soft: #fbfaff;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: var(--bg-soft);
+            color: #1e1b4b;
+        }
+
+        h1, .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .photo-card {
+            background: white;
+            border-radius: 24px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(168, 85, 247, 0.1);
+        }
+
+        .photo-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -15px rgba(168, 85, 247, 0.15);
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .btn-purple:hover {
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+            transform: scale(1.02);
+        }
+
+        .drop-zone {
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='24' ry='24' stroke='%23A855F7FF' stroke-width='2' stroke-dasharray='8%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+            border-radius: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.drag-over {
+            background-color: var(--light-purple);
+            transform: scale(0.99);
+        }
+
+        .like-heart {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .like-heart.active {
+            fill: #ef4444;
+            stroke: #ef4444;
+            transform: scale(1.2);
+        }
+
+        /* 隐藏滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e9d5ff; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d8b4fe; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- 导航栏 -->
+    <nav class="glass-nav border-b border-purple-100 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 btn-purple rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <i data-lucide="aperture" class="w-6 h-6"></i>
+                </div>
+                <span class="text-2xl font-bold tracking-tight text-slate-900 font-serif italic">L'Atelier</span>
+            </div>
+            <div class="flex items-center space-x-6">
+                <button id="upload-btn" class="btn-purple text-white px-6 py-2.5 rounded-full text-sm font-medium transition-all flex items-center">
+                    <i data-lucide="plus-circle" class="w-4 h-4 mr-2"></i>
+                    上传快照
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-12">
+        <!-- 头部 -->
+        <header class="mb-16 text-center">
+            <h1 class="text-5xl font-bold text-slate-900 mb-4">Capturing Moments</h1>
+            <p class="text-slate-500 text-lg max-w-xl mx-auto font-light">将瞬间凝固成永恒。这是属于你的视觉日记，记录每一寸光影。</p>
+        </header>
+
+        <!-- 上传面板 -->
+        <section id="upload-panel" class="hidden mb-16 bg-white/80 border border-purple-100 p-10 rounded-[32px] shadow-xl shadow-purple-500/5 transition-all animate-in fade-in slide-in-from-top-4">
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="image-plus" class="text-purple-500"></i>
+                    <h2 class="text-xl font-bold">新照片入库</h2>
+                </div>
+                <button id="close-upload" class="p-2 hover:bg-purple-50 rounded-full transition-colors">
+                    <i data-lucide="x" class="text-slate-400"></i>
+                </button>
+            </div>
+            
+            <div id="drop-zone" class="drop-zone p-12 text-center cursor-pointer mb-8">
+                <div class="space-y-4">
+                    <div class="mx-auto w-16 h-16 bg-purple-50 text-purple-500 rounded-2xl flex items-center justify-center">
+                        <i data-lucide="cloud-upload" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <p class="text-slate-700 text-lg font-medium">释放你的视觉灵感</p>
+                        <p class="text-sm text-slate-400 mt-1">拖拽照片或点击浏览文件夹</p>
+                    </div>
+                    <input type="file" id="file-input" class="hidden" accept="image/*" multiple>
+                </div>
+            </div>
+
+            <div id="preview-list" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 mb-8"></div>
+
+            <div class="flex justify-center">
+                <button id="save-all-btn" class="btn-purple text-white px-10 py-3 rounded-full font-bold disabled:opacity-30 disabled:grayscale transition-all" disabled>
+                    确认同步到画廊
+                </button>
+            </div>
+        </section>
+
+        <!-- 统计/过滤栏 -->
+        <div class="flex items-center justify-between mb-10">
+            <div class="flex items-center space-x-2 text-slate-500 text-sm">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                <span>全部作品</span>
+                <span id="photo-count" class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-md font-bold ml-1">0</span>
+            </div>
+        </div>
+
+        <!-- 照片网格 -->
+        <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+            <!-- 动态内容 -->
+        </div>
+
+        <!-- 空状态 -->
+        <div id="empty-state" class="hidden py-32 text-center">
+            <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-purple-50 text-purple-200 mb-6">
+                <i data-lucide="camera-off" class="w-12 h-12"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-700">画廊还是空的</h3>
+            <p class="text-slate-400 mt-2">点击“上传快照”开启你的摄影旅程。</p>
+        </div>
+    </main>
+
+    <!-- 全屏查看 -->
+    <div id="modal-overlay" class="fixed inset-0 bg-white/95 z-[100] hidden flex items-center justify-center p-8 overflow-hidden">
+        <div class="absolute top-6 left-8 flex items-center space-x-3">
+            <div class="w-8 h-8 btn-purple rounded-lg flex items-center justify-center text-white">
+                <i data-lucide="maximize-2" class="w-4 h-4"></i>
+            </div>
+            <span id="modal-title" class="font-serif italic text-xl">Untitled</span>
+        </div>
+        <button id="close-modal" class="absolute top-6 right-8 p-3 hover:bg-purple-50 rounded-full transition-all">
+            <i data-lucide="x-circle" class="w-8 h-8 text-slate-800"></i>
+        </button>
+        <img id="modal-img" src="" alt="Full view" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl">
+    </div>
+
+    <script>
+        // --- 数据库与图标初始化 ---
+        const DB_NAME = 'EliteGalleryDB';
+        const DB_VERSION = 2; 
+        let db;
+
+        const initDB = () => {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('photos')) {
+                        db.createObjectStore('photos', { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        };
+
+        const updateLucide = () => lucide.createIcons();
+
+        // --- 核心操作 ---
+        const savePhoto = (photo) => {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['photos'], 'readwrite');
+                const store = transaction.objectStore('photos');
+                photo.likes = photo.likes || 0;
+                photo.isLiked = false;
+                store.add(photo).onsuccess = () => resolve();
+            });
+        };
+
+        const updatePhotoStatus = (photo) => {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['photos'], 'readwrite');
+                const store = transaction.objectStore('photos');
+                store.put(photo).onsuccess = () => resolve();
+            });
+        };
+
+        const getAllPhotos = () => {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(['photos'], 'readonly');
+                transaction.objectStore('photos').getAll().onsuccess = (e) => resolve(e.target.result);
+            });
+        };
+
+        // --- UI 控制 ---
+        const elements = {
+            uploadBtn: document.getElementById('upload-btn'),
+            uploadPanel: document.getElementById('upload-panel'),
+            closeUpload: document.getElementById('close-upload'),
+            dropZone: document.getElementById('drop-zone'),
+            fileInput: document.getElementById('file-input'),
+            previewList: document.getElementById('preview-list'),
+            saveAllBtn: document.getElementById('save-all-btn'),
+            galleryGrid: document.getElementById('gallery-grid'),
+            emptyState: document.getElementById('empty-state'),
+            modalOverlay: document.getElementById('modal-overlay'),
+            modalImg: document.getElementById('modal-img'),
+            modalTitle: document.getElementById('modal-title'),
+            closeModal: document.getElementById('close-modal'),
+            photoCount: document.getElementById('photo-count')
+        };
+
+        let pendingFiles = [];
+
+        elements.uploadBtn.onclick = () => elements.uploadPanel.classList.toggle('hidden');
+        elements.closeUpload.onclick = () => {
+            elements.uploadPanel.classList.add('hidden');
+            pendingFiles = [];
+            renderPreviews();
+        };
+
+        elements.dropZone.onclick = () => elements.fileInput.click();
+        elements.dropZone.ondragover = (e) => { e.preventDefault(); elements.dropZone.classList.add('drag-over'); };
+        elements.dropZone.ondragleave = () => elements.dropZone.classList.remove('drag-over');
+        elements.dropZone.ondrop = (e) => {
+            e.preventDefault();
+            elements.dropZone.classList.remove('drag-over');
+            handleFiles(e.dataTransfer.files);
+        };
+        elements.fileInput.onchange = (e) => handleFiles(e.target.files);
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        pendingFiles.push({
+                            data: e.target.result,
+                            name: file.name,
+                            date: new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' })
+                        });
+                        renderPreviews();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function renderPreviews() {
+            elements.previewList.innerHTML = '';
+            pendingFiles.forEach((file, index) => {
+                const div = document.createElement('div');
+                div.className = 'relative aspect-square rounded-2xl overflow-hidden border-2 border-purple-100 group animate-in zoom-in-50 duration-300';
+                div.innerHTML = `
+                    <img src="${file.data}" class="w-full h-full object-cover">
+                    <button onclick="removePending(${index})" class="absolute top-2 right-2 bg-white/90 text-red-500 rounded-full p-1 shadow-md hover:bg-red-500 hover:text-white transition-all">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                elements.previewList.appendChild(div);
+            });
+            elements.saveAllBtn.disabled = pendingFiles.length === 0;
+            updateLucide();
+        }
+
+        window.removePending = (index) => {
+            pendingFiles.splice(index, 1);
+            renderPreviews();
+        };
+
+        elements.saveAllBtn.onclick = async () => {
+            elements.saveAllBtn.disabled = true;
+            for (const file of pendingFiles) {
+                await savePhoto({ url: file.data, title: file.name.split('.')[0], date: file.date, likes: 0 });
+            }
+            pendingFiles = [];
+            renderPreviews();
+            elements.uploadPanel.classList.add('hidden');
+            refreshGallery();
+        };
+
+        async function refreshGallery() {
+            const photos = await getAllPhotos();
+            elements.photoCount.textContent = photos.length;
+            
+            if (photos.length === 0) {
+                elements.galleryGrid.classList.add('hidden');
+                elements.emptyState.classList.remove('hidden');
+                return;
+            }
+
+            elements.galleryGrid.classList.remove('hidden');
+            elements.emptyState.classList.add('hidden');
+            elements.galleryGrid.innerHTML = '';
+
+            photos.reverse().forEach(photo => {
+                const card = document.createElement('div');
+                card.className = 'photo-card group overflow-hidden';
+                card.innerHTML = `
+                    <div class="relative aspect-[4/5] overflow-hidden cursor-zoom-in" onclick="openFullView('${photo.url}', '${photo.title}')">
+                        <img src="${photo.url}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy">
+                        <div class="absolute inset-0 bg-gradient-to-t from-purple-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                            <span class="text-white font-medium text-lg tracking-wide">${photo.title}</span>
+                        </div>
+                    </div>
+                    <div class="p-5 flex justify-between items-center bg-white">
+                        <div>
+                            <p class="text-[10px] uppercase tracking-widest text-purple-400 font-bold mb-1">${photo.date}</p>
+                            <h3 class="text-slate-800 font-medium truncate w-40">${photo.title}</h3>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button onclick="toggleLike(${photo.id}, event)" class="flex items-center space-x-1.5 group/like">
+                                <i data-lucide="heart" class="like-heart w-5 h-5 text-slate-300 ${photo.isLiked ? 'active' : ''}"></i>
+                                <span class="text-xs font-bold ${photo.isLiked ? 'text-red-500' : 'text-slate-400'}">${photo.likes || 0}</span>
+                            </button>
+                            <button onclick="confirmDelete(${photo.id}, event)" class="p-2 text-slate-200 hover:text-red-400 transition-colors">
+                                <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                elements.galleryGrid.appendChild(card);
+            });
+            updateLucide();
+        }
+
+        window.toggleLike = async (id, event) => {
+            event.stopPropagation();
+            const photos = await getAllPhotos();
+            const photo = photos.find(p => p.id === id);
+            if (photo) {
+                photo.isLiked = !photo.isLiked;
+                photo.likes = photo.isLiked ? (photo.likes + 1) : Math.max(0, photo.likes - 1);
+                await updatePhotoStatus(photo);
+                refreshGallery();
+            }
+        };
+
+        window.confirmDelete = async (id, event) => {
+            event.stopPropagation();
+            if (confirm('确认将此件艺术品从画廊移除？')) {
+                const transaction = db.transaction(['photos'], 'readwrite');
+                transaction.objectStore('photos').delete(id).onsuccess = () => refreshGallery();
+            }
+        };
+
+        window.openFullView = (url, title) => {
+            elements.modalImg.src = url;
+            elements.modalTitle.textContent = title;
+            elements.modalOverlay.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        };
+
+        elements.closeModal.onclick = () => {
+            elements.modalOverlay.classList.add('hidden');
+            document.body.style.overflow = '';
+        };
+
+        window.onload = async () => {
+            await initDB();
+            refreshGallery();
+        };
+    </script>
+</body>
+</html>
